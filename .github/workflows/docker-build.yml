@@ -1,0 +1,38 @@
+name: Build and Push Docker Image
+#
+# The workflow is triggered on pushes to the `main` branch or on manual dispatch
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  # Replace with your GitHub username or organization name
+  IMAGE_NAME: opcua_exporter
+
+jobs:
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Log in to GitHub Container Registry (ghcr.io)
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      # Step 3: Build the Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+          docker tag ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }} ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+
+      # Step 4: Push the image to GHCR
+      - name: Push Docker image to GHCR
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
